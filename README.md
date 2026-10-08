@@ -97,10 +97,6 @@ pip install -r requirements.txt
 
 Replay buffers (≈ 200 MB each) and intermediate checkpoints are excluded because of size. They are available on request.
 
-## AI disclosure
-
-Claude (Anthropic) was used to review the notebooks and results, recompute per-seed statistics from the CSV outputs, diagnose the Colab rendering failure and write the demo-video notebook, draft the presentation and speaker notes, and organize this repository. All experiments were designed and run by the author, who checked the reported numbers and is responsible for the conclusions.
-
 ## References
 
 See the final slide of `presentation/RL_Part2_Final_Presentation.pptx`. Main sources: Schulman et al. (2017) PPO; Haarnoja et al. (2018) SAC; Tobin et al. (2017) and Peng et al. (2018) domain randomization; Rajeswaran et al. (2017) EPOpt; Henderson et al. (2018); Agarwal et al. (2021); Raffin et al. (2021) Stable-Baselines3; Todorov et al. (2012) MuJoCo.
