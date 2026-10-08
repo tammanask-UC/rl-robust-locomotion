@@ -1,0 +1,7 @@
+Metric,Best Configuration,Value
+Nominal Return,SAC Nominal,3272.9
+Nominal Success (%),SAC Nominal,100.0
+Grid Return,PPO Randomized,1325.7
+Grid Success (%),PPO Randomized,20.9
+ID Return,PPO Randomized,1952.8
+OOD Return,PPO Randomized,972.9

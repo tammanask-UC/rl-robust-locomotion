@@ -1,0 +1,66 @@
+ROBUST LOCOMOTION UNDER DYNAMICS SHIFT — SPEAKER SCRIPT (13-minute version)
+About 1649 words: roughly 12 to 13 minutes of speaking at a natural pace, plus about 17 seconds of demo video and slide transitions.
+Items in [brackets] are cues, not words to say.
+
+SLIDE 1 — TITLE  (~25 s)
+Hello, I'm Suresh Tammana. My project asks whether a reinforcement-learning locomotion policy that works well in its training simulator keeps working when the physics changes. I compare PPO and SAC, each trained with fixed physics and with domain randomization, on the MuJoCo Hopper: 12 agents, tested in 3,000 episodes across 25 combinations of mass and friction.
+
+SLIDE 2 — PROBLEM AND MOTIVATION  (~38 s)
+Real robots never match their simulator exactly, so a controller that only works in its training physics is not reliable. In Part 1 I asked how algorithm choice and domain randomization affect the trade-off between peak performance and robustness. To answer it, I train each policy, then test it on a controlled grid of physics changes and measure return, success, and the gap between conditions inside and outside the training range. This matters because payload, wear and surfaces all change these parameters on a real robot.
+
+SLIDE 3 — BACKGROUND  (~39 s)
+PPO is on-policy and stabilizes learning by clipping each policy update. SAC is off-policy: it reuses experience from a replay buffer and adds an entropy bonus, which usually makes it more sample-efficient. Domain randomization resamples the physics every episode, and the policy never sees the values, so it must learn behavior that works across them. EPOpt showed robustness gains on this same Hopper task, and Henderson and colleagues warned that MuJoCo results vary a lot between seeds. That warning turns out to be central to my results.
+
+SLIDE 4 — HYPOTHESES FROM PART 1  (~29 s)
+Part 1 set three hypotheses with fixed tests. H1: SAC learns faster than PPO under nominal training. H2: nominally trained policies keep less than 70 percent of their return out of distribution. H3: randomization raises robustness while costing less than 10 percent of nominal return. I'll return to each with a verdict. Each one has a numeric test, so the verdicts don't depend on my interpretation.
+
+SLIDE 5 — EXPERIMENTAL DESIGN  (~37 s)
+Two algorithms times two training regimes gives four conditions, each trained with three seeds for 500,000 steps: 12 agents. Randomized training scales mass between 0.8 and 1.2 and friction between 0.7 and 1.3. Every agent is then tested on this five-by-five grid, ten episodes per cell. The dark center is nominal, the nine teal cells are inside the training range, and the sixteen grey cells are out-of-distribution. All agents get identical starting conditions in each cell. Validation runs every 25,000 steps on nominal physics.
+
+SLIDE 6 — ENVIRONMENT: STATE, ACTION, REWARD  (~39 s)
+The Hopper is a one-legged planar robot with three actuated joints. It observes eleven values, such as torso height and joint angles and velocities, and outputs three torques. I used the built-in reward: forward velocity, plus a bonus for staying upright, minus a small torque cost. An episode counts as a success only if the robot survives all 1,000 steps and moves at least three meters. Importantly, mass and friction are never observed. That way, a robot that just balances in place doesn't count as a success.
+
+SLIDE 7 — IMPLEMENTATION  (~35 s)
+Both algorithms use Stable-Baselines3 with two layers of 256 units and standard, untuned MuJoCo settings, so implementation differences don't confound the comparison. A custom wrapper scales mass and friction relative to the stored nominal values, so changes never accumulate between episodes. Evaluation uses deterministic actions, separate seeds, and the final policy rather than the best checkpoint, which avoids overstating performance. PPO trained on CPU, but SAC needed a GPU to finish in time, so I don't compare wall-clock time.
+
+SLIDE 8 — CHANGES FROM THE PART 1 PLAN  (~36 s)
+Several things changed from Part 1, and I want to be transparent. I used three seeds instead of five because of runtime, as Part 1's fallback allowed. PPO ran without input normalization and actually trained 501,760 steps because it collects whole rollouts. With three seeds I report the interquartile mean and show every seed instead of confidence intervals. Two SAC runs lost early validation history in a Colab crash, and the demo is drawn from simulation state because the renderer crashed.
+
+SLIDE 9 — LEARNING CURVES (H1)  (~42 s)
+These are the nominal-training validation curves, one line per seed. On its two complete seeds, SAC has a larger learning-curve area, 2,293 versus 1,871 for PPO, and reached a return of 1,500 by 75 to 125 thousand steps. So H1 is directionally supported, but two seeds can't confirm it. Notice PPO's instability: seed 0 reached about 2,900 at 425 thousand steps, then collapsed to about 1,200 by the end. Because Part 1 committed to testing the final policy rather than the best checkpoint, that late collapse is why PPO seed 0 counts as a failure.
+
+SLIDE 10 — TRAINING CHALLENGES  (~36 s)
+Two engineering issues matter. First, two SAC runs crashed; I resumed both from 300-thousand-step checkpoints, including the replay buffer, but the early validation points were lost, and I left those gaps rather than inventing data. Second, PPO's 500-thousand-step validation happens just before its final update. For two unstable randomized seeds, that one update swung nominal return between about 1,000 and over 3,000, which shows how fragile these policies were. The lesson for me was to write every log entry to disk immediately.
+
+SLIDE 11 — RESULT 1: NOMINAL PERFORMANCE  (~36 s)
+At nominal physics, the successful policies all score between about 3,000 and 3,400, so peak performance is similar. The real difference is reliability. SAC Nominal succeeded on all three seeds, with 100 percent success. PPO Nominal succeeded on two of three; seed 0 is the late collapse from the learning curves. Each randomized configuration also had one failed seed. So SAC Nominal is best described as the most reliable learner, with an interquartile mean of 3,281, versus 2,979 for PPO Nominal.
+
+SLIDE 12 — RESULT 2: ROBUSTNESS ACROSS 25 CONDITIONS  (~41 s)
+Across all 25 conditions, success is low for everyone. The standout is PPO Randomized seed 1, with 51 percent grid success, more than twice any other agent, but its other two seeds reached only 3 and 8 percent. That one seed is why PPO Randomized has the highest mean grid return, 1,326. Using the interquartile mean that Part 1 specified, it is still highest, but the gap shrinks to about 130 points. So randomization produced a very robust policy on only one of three seeds, exactly the seed variance Henderson warned about.
+
+SLIDE 13 — WHERE POLICIES BREAK  (~39 s)
+These heatmaps show mean return in every grid cell, averaged over three seeds; the red box marks nominal physics. Three patterns stand out. First, high friction was the hardest shift: at 1.5 times friction, every configuration scores below 600. Second, nominal training gives a narrow peak: SAC Nominal scores 3,273 at the center but drops to between about 1,100 and 1,650 just one step away in friction. Third, PPO Randomized has the widest working region, with every in-distribution cell above 1,400, partly thanks to its exceptional seed 1.
+
+SLIDE 14 — RESULT 3: WHAT DOMAIN RANDOMIZATION CHANGED  (~28 s)
+Looking only at the out-of-distribution cells, randomization helped. For SAC, every randomized seed beats every nominal seed, the cleanest result in the study. For PPO, the interquartile mean rises from 700 to 956, but the seed ranges overlap, so the evidence is weaker. Still, the best out-of-distribution success rate is only about 9 percent: randomization made failure more graceful, but it didn't solve robustness.
+
+SLIDE 15 — HYPOTHESIS SCORECARD  (~46 s)
+Against the Part 1 tests: H1 is directionally supported, but two seeds are too few to confirm it. H2 is clearly supported: nominal policies kept only about a quarter of their return out of distribution, far below the 0.70 threshold. For example, the robustness ratio was 0.28 for PPO and 0.22 for SAC. H3 is partly supported: randomization raised robustness for both algorithms, and PPO's nominal cost was within the 10 percent limit, but SAC's, at 10.7 percent, was just over. The Part 1 success criterion was met. Both nominally trained algorithms exceeded a return of 1,500 with at least 80 percent success.
+
+SLIDE 16 — DEMONSTRATION: TRAINED POLICIES IN HOPPER-V5  (~54 s)
+Here are real rollouts of the trained policies, drawn from the MuJoCo simulation state. [Play the top video.] At nominal physics, both SAC Nominal and PPO Randomized hop the full 1,000 steps, about 19 meters. [Play the bottom video.] Now with 40 percent more mass and 50 percent more friction, at one-third speed. Watch the knee buckle on landing. SAC Nominal fails at step 153; PPO Randomized lasts about 70 steps longer, then fails the same way. These are best seeds, so this illustrates the pattern rather than proving it. PPO Randomized saw heavier bodies during training, which may explain why it holds on longer. Notice that both robots fall the same way, so randomization delayed the failure rather than preventing it.
+
+SLIDE 17 — ETHICAL AND PRACTICAL CONSIDERATIONS  (~35 s)
+A policy that collapses at 1.4 times mass in simulation could damage a real robot or hurt someone, so deployment would need safety constraints, staged testing, and human oversight. Since only one of three randomized PPO seeds was robust, judging a controller by its best seed would be misleading, so I report every seed and disclosed my missing data. Robust locomotion is also dual-use, and GPU training has energy costs. I also labeled the demo clearly as best seeds.
+
+SLIDE 18 — LIMITATIONS AND LESSONS LEARNED  (~31 s)
+The main limitation is three seeds: several conclusions hinge on one seed. Mass scaling also doesn't scale inertia, and I tested only one task. What I learned: nominal return and robustness are different properties, seed variance can dominate an RL comparison, long cloud runs must log and checkpoint incrementally, and small implementation details can change what the numbers seem to say. That's why every seed is on my slides.
+
+SLIDE 19 — CONCLUSION AND FUTURE WORK  (~44 s)
+To conclude, three findings. First, brittleness is real: every nominally trained policy lost most of its return out of distribution. Second, SAC was the most reliable nominal learner, succeeding on all three seeds. Third, randomization helps but unreliably: it raised out-of-distribution return on every SAC seed, but strong robustness appeared in only one of three PPO seeds. For future work, I'd run at least five seeds with confidence intervals, scale inertia along with mass, and test wider shifts and adaptive randomization. The takeaway: a high benchmark score is not robustness. Test under controlled shift, and report every seed.
+
+SLIDE 20 — REFERENCES  (~2 s)
+These are my main references.
+
+SLIDE 21 — AI DISCLOSURE  (~20 s)
+Finally, I used Claude to review my work against the rubric, recompute per-seed statistics from my results, fix the demo rendering, and draft these slides and notes. I designed the study, ran the experiments, checked the numbers, and take responsibility for the conclusions. Thank you.
